@@ -16,9 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: Run tests
-        run: cargo test
+        run: cargo test --all-featuers
 
   fmt:
     name: Rustfmt
@@ -26,10 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
       - name: Enforce formatting
-        run: cargo fmt --check
+        run: cargo fmt --all --check
 
   clippy:
     name: Clippy
@@ -37,9 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
       - name: Linting
         run: cargo clippy -- -D warnings
 
@@ -52,3 +46,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: audit
         run: cargo audit
+
+  coverage:
+      name: Code coverage
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: dtolnay/rust-toolchain@stable
+        - run: cargo install cargo-tarpaulin
+        - run: cargo tarpaulin --ignore-tests
