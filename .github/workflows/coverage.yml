@@ -20,4 +20,5 @@ jobs:
         uses:                   codecov/codecov-action@v2
         with:
           # token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          token: "fb2adbfc-a2cf-422e-a52d-caedd8d688a4"
           fail_ci_if_error:     true
