@@ -6,8 +6,13 @@ async fn index() -> &'static str {
     "Hello, World!"
 }
 
+// `Path(name): Path<String>` 这一部分是 Axum 的 extractors。它们允许你从请求中提取数据。
 async fn greet(Path(name): Path<String>) -> impl IntoResponse {
     format!("Hello, {}!", name)
+}
+
+async fn health_check() -> impl IntoResponse {
+    "Server is running!"
 }
 
 #[tokio::main]
@@ -15,7 +20,8 @@ async fn main() -> Result<()> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
-        .route("/:name", get(greet));
+        .route("/:name", get(greet))
+        .route("/health_check", get(health_check));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing_subscriber::fmt::init();
