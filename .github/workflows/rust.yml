@@ -42,3 +42,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Linting
         run: cargo clippy -- -D warnings
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: audit
+        run: cargo audit
