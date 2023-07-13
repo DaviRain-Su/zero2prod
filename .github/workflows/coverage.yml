@@ -20,5 +20,5 @@ jobs:
         uses:                   codecov/codecov-action@v3
         with:
           # token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token:                  ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error:     true
