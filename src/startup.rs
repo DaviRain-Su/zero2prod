@@ -1,10 +1,10 @@
 use anyhow::Result;
-use axum::routing::IntoMakeService;
 use axum::{
     routing::{get, post},
-    Router, Server,
+    Router,
 };
-use hyper::server::conn::AddrIncoming;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::net::TcpListener;
 
 use crate::routes::greet;
@@ -12,7 +12,7 @@ use crate::routes::health_check;
 use crate::routes::index;
 use crate::routes::subscribe;
 
-pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
+pub async fn run(listener: TcpListener, conn_pool: Pool<Postgres>) -> Result<()> {
     tracing::info!("listener: {:?}", listener);
 
     // build our application with a single route
@@ -20,10 +20,13 @@ pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService
         .route("/", get(index))
         .route("/:name", get(greet))
         .route("/health_check", get(health_check))
-        .route("/subscriptions", post(subscribe));
+        .route("/subscriptions", post(subscribe))
+        .with_state(conn_pool); // ref: https://github.com/tokio-rs/axum/blob/main/examples/sqlx-postgres/src/main.rs#L27
 
     // run it with hyper on localhost:3000
-    let server = axum::Server::from_tcp(listener)?.serve(app.into_make_service());
+    axum::Server::from_tcp(listener)?
+        .serve(app.into_make_service())
+        .await?;
 
-    Ok(server)
+    Ok(())
 }

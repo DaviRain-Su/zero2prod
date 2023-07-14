@@ -5,13 +5,13 @@ use zero2prod::configuration::get_configuration;
 use zero2prod::startup::run;
 
 // Launch our application in the background ~somehow~
-fn spawn_app() -> String {
+async fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     // We retrieve the port assigned to us by the OS
     let port = listener.local_addr().unwrap().port();
+    let (_configuration, conn_pool) = get_configuration().await.unwrap();
     tracing::info!("port: {:?}", port);
-
-    let server = run(listener).expect("faild bind address");
+    let server = run(listener, conn_pool);
 
     tokio::spawn(server);
 
@@ -26,7 +26,7 @@ fn spawn_app() -> String {
 #[tokio::test]
 async fn health_check_works() {
     // Arrange
-    let addr = spawn_app();
+    let addr = spawn_app().await;
     println!("addr : {}", addr);
     // We need to bring in `reqwest`
     // to perform HTTP requests against our application.
@@ -45,8 +45,8 @@ async fn health_check_works() {
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
-    let app_address = spawn_app();
-    let configuration = get_configuration().expect("Failed to read configuration");
+    let app_address = spawn_app().await;
+    let (configuration, _) = get_configuration().await.unwrap();
     let connection_string = configuration.database.connection_string();
     // The `Connection` trait MUST be in scope for us to invoke
     // `PgConnection::connect` - it is not an inherent method of the struct!
@@ -78,7 +78,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 #[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
     // Arrange
-    let app_address = spawn_app();
+    let app_address = spawn_app().await;
     let client = reqwest::Client::new();
     let test_cases = vec![
         ("name=le%20guin", "missing the email"),
