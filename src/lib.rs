@@ -9,11 +9,12 @@ use std::net::TcpListener;
 
 pub mod configuration;
 pub mod routes;
+pub mod startup;
 
-use routes::greet::greet;
-use routes::health_check::health_check;
+use routes::greet;
+use routes::health_check;
 use routes::index;
-use routes::subscriptions::subscribe;
+use routes::subscribe;
 
 pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     tracing::info!("listener: {:?}", listener);
