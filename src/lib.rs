@@ -1,4 +1,7 @@
 use anyhow::Result;
+use axum::body::Body;
+use axum::http::Response;
+use axum::http::StatusCode;
 use axum::routing::IntoMakeService;
 use axum::{
     extract::{Form, Path},
@@ -30,9 +33,23 @@ struct FormData {
 }
 
 // Let's start simple: we always return a 200 OK
-async fn subscriptions(Form(form): Form<FormData>) -> impl IntoResponse {
+async fn subscribe(form: Option<Form<FormData>>) -> impl IntoResponse {
     // Here you can use the form data.
-    format!("Received subscription from {} at {}", form.name, form.email)
+    match form {
+        Some(form) => {
+            let response_text = format!(
+                "Received subscription from {} at {}",
+                form.0.name, form.0.email
+            );
+            Response::new(Body::from(response_text))
+        }
+        None => {
+            let error_text = "Missing fields";
+            let mut response = Response::new(Body::from(error_text));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            response
+        }
+    }
 }
 
 pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
@@ -43,7 +60,7 @@ pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService
         .route("/", get(index))
         .route("/:name", get(greet))
         .route("/health_check", get(health_check))
-        .route("/subscriptions", post(subscriptions));
+        .route("/subscriptions", post(subscribe));
 
     // run it with hyper on localhost:3000
     let server = axum::Server::from_tcp(listener)?.serve(app.into_make_service());
