@@ -1,5 +1,6 @@
 //! tests/health_check.rs
 use std::net::TcpListener;
+use zero2prod::startup::run;
 
 // Launch our application in the background ~somehow~
 fn spawn_app() -> String {
@@ -8,7 +9,7 @@ fn spawn_app() -> String {
     let port = listener.local_addr().unwrap().port();
     tracing::info!("port: {:?}", port);
 
-    let server = zero2prod::run(listener).expect("faild bind address");
+    let server = run(listener).expect("faild bind address");
 
     tokio::spawn(server);
 
