@@ -35,3 +35,16 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::response::IntoResponse;
+
+    use super::health_check;
+
+    #[tokio::test]
+    async fn health_check_succeds() {
+        let response = health_check().await;
+        assert!(response.into_response().status().is_success());
+    }
+}
