@@ -17,14 +17,14 @@ async fn health_check() -> impl IntoResponse {
     ""
 }
 
-pub fn run() -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
+pub fn run(address: &str) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
         .route("/:name", get(greet))
         .route("/health_check", get(health_check));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr: SocketAddr = address.parse()?;
     tracing_subscriber::fmt::init();
 
     println!("listening on {}", addr);
