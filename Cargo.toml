@@ -25,6 +25,7 @@ anyhow = "1.0.71"
 async-trait = "0.1.71"
 axum = "0.6.18"
 bytes = "1.4.0"
+config = "0.13.3"
 futures = "0.3.28"
 http = "0.2.9"
 hyper = "0.14.27"
@@ -32,6 +33,19 @@ serde = { version = "1.0.171", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+
+[dependencies.sqlx]
+version = "0.7.0"
+default-features = false
+features = [
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+    "runtime-tokio",
+    "tls-rustls",
+]
 
 # Dev dependencies are used exclusively when running tests or examples
 # They do not get included in the final application binary!
