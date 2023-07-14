@@ -5,7 +5,7 @@ use std::net::TcpListener;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
+    let listener = TcpListener::bind("127.0.0.1:0")?;
     // We retrieve the port assigned to us by the OS
     let port = listener.local_addr().unwrap().port();
     tracing::info!("port: {:?}", port);
