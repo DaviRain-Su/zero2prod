@@ -24,6 +24,7 @@ path = "src/main.rs"
 anyhow = "1.0.71"
 axum = "0.6.18"
 hyper = "0.14.27"
+serde = { version = "1.0.171", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"

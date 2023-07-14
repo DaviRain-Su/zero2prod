@@ -1,7 +1,13 @@
 use anyhow::Result;
 use axum::routing::IntoMakeService;
-use axum::{extract::Path, response::IntoResponse, routing::get, Router, Server};
+use axum::{
+    extract::{Form, Path},
+    response::IntoResponse,
+    routing::{get, post},
+    Router, Server,
+};
 use hyper::server::conn::AddrIncoming;
+use serde::Deserialize;
 use std::net::TcpListener;
 
 async fn index() -> &'static str {
@@ -17,6 +23,18 @@ async fn health_check() -> impl IntoResponse {
     ""
 }
 
+#[derive(Deserialize)]
+struct FormData {
+    name: String,
+    email: String,
+}
+
+// Let's start simple: we always return a 200 OK
+async fn subscriptions(Form(form): Form<FormData>) -> impl IntoResponse {
+    // Here you can use the form data.
+    format!("Received subscription from {} at {}", form.name, form.email)
+}
+
 pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     tracing::info!("listener: {:?}", listener);
 
@@ -24,7 +42,8 @@ pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService
     let app = Router::new()
         .route("/", get(index))
         .route("/:name", get(greet))
-        .route("/health_check", get(health_check));
+        .route("/health_check", get(health_check))
+        .route("/subscriptions", post(subscriptions));
 
     // run it with hyper on localhost:3000
     let server = axum::Server::from_tcp(listener)?.serve(app.into_make_service());
