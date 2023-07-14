@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::routing::IntoMakeService;
 use axum::{extract::Path, response::IntoResponse, routing::get, Router, Server};
 use hyper::server::conn::AddrIncoming;
-use std::net::SocketAddr;
+use std::net::TcpListener;
 
 async fn index() -> &'static str {
     "Hello, World!"
@@ -17,20 +17,17 @@ async fn health_check() -> impl IntoResponse {
     ""
 }
 
-pub fn run(address: &str) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
+pub fn run(listener: TcpListener) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
+    tracing::info!("listener: {:?}", listener);
+
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
         .route("/:name", get(greet))
         .route("/health_check", get(health_check));
 
-    let addr: SocketAddr = address.parse()?;
-    tracing_subscriber::fmt::init();
-
-    println!("listening on {}", addr);
-
     // run it with hyper on localhost:3000
-    let server = axum::Server::bind(&addr).serve(app.into_make_service());
+    let server = axum::Server::from_tcp(listener)?.serve(app.into_make_service());
 
     Ok(server)
 }
