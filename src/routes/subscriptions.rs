@@ -6,8 +6,11 @@ use axum::{
     extract::{Form, FromRef, FromRequestParts, State},
     response::IntoResponse,
 };
+use chrono::Utc;
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
+use sqlx::Acquire;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct FormData {
@@ -58,12 +61,27 @@ where
 // 这里我的疑问是，这里的两个参数的位置不能颠倒
 // Let's start simple: we always return a 200 OK
 pub async fn subscribe(
-    DatabaseConnection(_conn): DatabaseConnection,
+    DatabaseConnection(mut conn_pool): DatabaseConnection,
     form: Option<Form<FormData>>,
 ) -> impl IntoResponse {
     // Here you can use the form data.
     match form {
         Some(form) => {
+            let connection = conn_pool.acquire().await.unwrap();
+            let _ = sqlx::query!(
+                r#"
+            INSERT INTO subscriptions (id, email, name, subscribed_at)
+            VALUES ($1, $2, $3, $4)
+            "#,
+                Uuid::new_v4(),
+                form.email,
+                form.name,
+                Utc::now()
+            )
+            // We use `get_ref` to get an immutable reference to the `PgConnection`
+            // wrapped by `web::Data`.
+            .execute(connection)
+            .await;
             let response_text = format!(
                 "Received subscription from {} at {}",
                 form.0.name, form.0.email
