@@ -53,3 +53,4 @@ features = [
 # They do not get included in the final application binary!
 [dev-dependencies]
 reqwest = "0.11.18"
+uuid = { version = "1.4.0", features = ["serde", "v4"] }
