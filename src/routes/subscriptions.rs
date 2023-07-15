@@ -90,8 +90,9 @@ pub async fn subscribe(
                 }
                 Err(e) => {
                     let error_text = format!("Database error: {}", e);
-                    // todo(davirain)
-                    Response::new(Body::from(error_text))
+                    let mut response = Response::new(Body::from(error_text));
+                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                    response
                 }
             }
         }
