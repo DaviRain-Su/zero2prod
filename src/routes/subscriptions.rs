@@ -90,9 +90,8 @@ pub async fn subscribe(
                 }
                 Err(e) => {
                     let error_text = format!("Database error: {}", e);
-                    let mut response = Response::new(Body::from(error_text));
-                    *response.status_mut() = StatusCode::BAD_REQUEST;
-                    response
+                    // todo(davirain)
+                    Response::new(Body::from(error_text))
                 }
             }
         }
