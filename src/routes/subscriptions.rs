@@ -68,7 +68,7 @@ pub async fn subscribe(
     match form {
         Some(form) => {
             let connection = conn_pool.acquire().await.unwrap();
-            let _ = sqlx::query!(
+            let result = sqlx::query!(
                 r#"
             INSERT INTO subscriptions (id, email, name, subscribed_at)
             VALUES ($1, $2, $3, $4)
@@ -80,11 +80,21 @@ pub async fn subscribe(
             )
             .execute(connection)
             .await;
-            let response_text = format!(
-                "Received subscription from {} at {}",
-                form.0.name, form.0.email
-            );
-            Response::new(Body::from(response_text))
+            match result {
+                Ok(_) => {
+                    let response_text = format!(
+                        "Received subscription from {} at {}",
+                        form.0.name, form.0.email
+                    );
+                    Response::new(Body::from(response_text))
+                }
+                Err(e) => {
+                    let error_text = format!("Database error: {}", e);
+                    let mut response = Response::new(Body::from(error_text));
+                    *response.status_mut() = StatusCode::BAD_REQUEST;
+                    response
+                }
+            }
         }
         None => {
             let error_text = "Missing fields";
