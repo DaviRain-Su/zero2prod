@@ -12,7 +12,7 @@ use sqlx::postgres::PgPool;
 use sqlx::Acquire;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct FormData {
     name: String,
     email: String,
@@ -64,6 +64,16 @@ pub async fn subscribe(
     DatabaseConnection(mut conn_pool): DatabaseConnection,
     form: Option<Form<FormData>>,
 ) -> impl IntoResponse {
+    let request_id = Uuid::new_v4();
+    tracing::info!(
+        "request_id {} - Adding '{:?}' as a new subscriber.",
+        request_id,
+        form
+    );
+    tracing::info!(
+        "request_id {} - Saving new subscriber details in the database",
+        request_id
+    );
     // Here you can use the form data.
     match form {
         Some(form) => {
@@ -82,6 +92,10 @@ pub async fn subscribe(
             .await;
             match result {
                 Ok(_) => {
+                    tracing::info!(
+                        "request_id {} - New subscriber details have been saved",
+                        request_id
+                    );
                     let response_text = format!(
                         "Received subscription from {} at {}",
                         form.0.name, form.0.email
@@ -89,6 +103,11 @@ pub async fn subscribe(
                     Response::new(Body::from(response_text))
                 }
                 Err(e) => {
+                    tracing::error!(
+                        "request_id {} - Failed to execute query: {:?}",
+                        request_id,
+                        e
+                    );
                     let error_text = format!("Database error: {}", e);
                     let mut response = Response::new(Body::from(error_text));
                     *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
