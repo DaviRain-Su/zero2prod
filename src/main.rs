@@ -1,16 +1,13 @@
 use anyhow::Result;
 use sqlx::PgPool;
 use std::net::TcpListener;
-use tracing_log::LogTracer;
 use zero2prod::configuration::get_configuration;
 use zero2prod::startup::run;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Redirect all `log`'s events to our subscriber
-    LogTracer::init()?;
-    let subscriber = get_subscriber("zero2prod".into(), "info".into());
+    let subscriber = get_subscriber("zero2prod".into(), "info".into(), std::io::stdout);
     init_subscriber(subscriber)?;
 
     let configuration = get_configuration()?;

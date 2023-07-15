@@ -2682,6 +2682,7 @@ dependencies = [
  "config",
  "http",
  "hyper",
+ "once_cell",
  "reqwest",
  "serde",
  "sqlx",
