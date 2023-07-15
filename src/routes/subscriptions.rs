@@ -10,6 +10,7 @@ use chrono::Utc;
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
 use sqlx::Acquire;
+use tracing::Instrument;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
@@ -65,15 +66,21 @@ pub async fn subscribe(
     form: Option<Form<FormData>>,
 ) -> impl IntoResponse {
     let request_id = Uuid::new_v4();
-    tracing::info!(
-        "request_id {} - Adding '{:?}' as a new subscriber.",
-        request_id,
-        form
+    // Spans, like logs, have an associated level
+    // `info_span` creates a span at the info-level
+    let request_span = tracing::info_span!(
+        "Adding a new subscriber.", %request_id,
+        subscriber = ?form,
     );
-    tracing::info!(
-        "request_id {} - Saving new subscriber details in the database",
-        request_id
-    );
+    // Using `enter` in an async function is a recipe for disaster!
+    // Bear with me for now, but don't do this at home.
+    // See the following section on `Instrumenting Futures`
+    let _request_span_guard = request_span.enter();
+
+    // We do not call `.enter` on query_span!
+    // `.instrument` takes care of it at the right moments
+    // in the query future lifetime
+    let query_span = tracing::info_span!("Saving new subscriber details in the database");
     // Here you can use the form data.
     match form {
         Some(form) => {
@@ -89,6 +96,8 @@ pub async fn subscribe(
                 Utc::now()
             )
             .execute(connection)
+            // First we attach the instrumentation, then we `.await` it
+            .instrument(query_span)
             .await;
             match result {
                 Ok(_) => {
@@ -122,4 +131,6 @@ pub async fn subscribe(
             response
         }
     }
+    // `_request_span_guard` is dropped at the end of `subscribe`
+    // That's when we "exit" the span
 }
