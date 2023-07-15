@@ -9,7 +9,7 @@ use crate::routes::index;
 use crate::routes::{subscribe, using_connection_pool_extractor};
 
 pub async fn run(listener: TcpListener, conn_pool: PgPool) -> Result<()> {
-    tracing::info!("listener: {:?}", listener);
+    tracing::debug!("listening on {}", listener.local_addr()?);
 
     // build our application with a single route
     let app = Router::new()
