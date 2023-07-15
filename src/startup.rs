@@ -1,7 +1,6 @@
 use anyhow::Result;
 use axum::{routing::get, Router};
-use sqlx::Pool;
-use sqlx::Postgres;
+use sqlx::PgPool;
 use std::net::TcpListener;
 
 use crate::routes::greet;
@@ -9,7 +8,7 @@ use crate::routes::health_check;
 use crate::routes::index;
 use crate::routes::{subscribe, using_connection_pool_extractor};
 
-pub async fn run(listener: TcpListener, conn_pool: Pool<Postgres>) -> Result<()> {
+pub async fn run(listener: TcpListener, conn_pool: PgPool) -> Result<()> {
     tracing::info!("listener: {:?}", listener);
 
     // build our application with a single route

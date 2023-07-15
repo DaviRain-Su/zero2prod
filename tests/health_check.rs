@@ -1,4 +1,5 @@
 //! tests/health_check.rs
+use sqlx::PgPool;
 use sqlx::{Connection, PgConnection};
 use std::net::TcpListener;
 use zero2prod::configuration::get_configuration;
@@ -9,9 +10,18 @@ async fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     // We retrieve the port assigned to us by the OS
     let port = listener.local_addr().unwrap().port();
-    let (_configuration, conn_pool) = get_configuration().await.unwrap();
+
+    let configuration = get_configuration().unwrap();
+    let db_connection_str = configuration.database.connection_string();
+
+    std::env::set_var("DATABASE_URL", db_connection_str.clone());
+
+    let connection_pool = PgPool::connect(&configuration.database.connection_string())
+        .await
+        .unwrap();
+
     tracing::info!("port: {:?}", port);
-    let server = run(listener, conn_pool);
+    let server = run(listener, connection_pool);
 
     tokio::spawn(server);
 
@@ -46,7 +56,7 @@ async fn health_check_works() {
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
     let app_address = spawn_app().await;
-    let (configuration, _) = get_configuration().await.unwrap();
+    let configuration = get_configuration().unwrap();
     let connection_string = configuration.database.connection_string();
     // The `Connection` trait MUST be in scope for us to invoke
     // `PgConnection::connect` - it is not an inherent method of the struct!

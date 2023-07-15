@@ -78,8 +78,6 @@ pub async fn subscribe(
                 form.name,
                 Utc::now()
             )
-            // We use `get_ref` to get an immutable reference to the `PgConnection`
-            // wrapped by `web::Data`.
             .execute(connection)
             .await;
             let response_text = format!(
