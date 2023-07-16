@@ -15,7 +15,7 @@ pub async fn run(listener: TcpListener, conn_pool: PgPool) -> Result<()> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
-        .route("/:name", get(greet))
+        .route("/greet/:name", get(greet))
         .route("/health_check", get(health_check))
         .route(
             "/subscriptions",
