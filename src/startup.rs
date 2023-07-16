@@ -2,6 +2,7 @@ use anyhow::Result;
 use axum::{routing::get, Router};
 use sqlx::PgPool;
 use std::net::TcpListener;
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 
 use crate::routes::greet;
 use crate::routes::health_check;
@@ -19,6 +20,11 @@ pub async fn run(listener: TcpListener, conn_pool: PgPool) -> Result<()> {
         .route(
             "/subscriptions",
             get(using_connection_pool_extractor).post(subscribe),
+        )
+        // logging so we can see whats going on
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         )
         .with_state(conn_pool); // ref: https://github.com/tokio-rs/axum/blob/main/examples/sqlx-postgres/src/main.rs#L27
 
