@@ -163,3 +163,217 @@ docker build 通过使用一个构建上下文来生成镜像。你可以将正�
 ### 5.3.3  Sqlx offline mode
 
 这里我们使用的是sqlx的0.7版本，这里offline已经是默认支持的feature了，所以不需要再指定。
+
+
+todo!()
+
+
+## 5.4 部署到DigitalOcean Apps平台
+
+我们已经构建了一个（非常好的）容器化版本的应用程序。现在让我们来部署它！
+
+### 5.4.1 设置
+
+您需要在[Digital Ocean的网站上注册账号](https://cloud.digitalocean.com/registrations/new)。
+
+一旦您拥有了账号，请安装Digital Ocean的命令行工具doctl - 您可以在[此处](https://docs.digitalocean.com/reference/doctl/how-to/install/)找到安装说明。
+
+> 在Digital Ocean的应用平台上进行托管并不是免费的 - 让我们的应用程序和关联的数据库保持运行大约需要每月20.00美元的费用。
+>我建议您在每个会话结束时销毁该应用程序 - 这样可以保持您的花费远低于1.00美元。在我撰写本章时，我在尝试中只花费了0.20美元！
+
+
+### 5.4.2 应用程序规范
+
+Digital Ocean的应用平台使用一个声明性配置文件来让我们指定应用程序部署的样子 - 他们称之为[App Spec](https://www.digitalocean.com/docs/app-platform/concepts/app-spec/)。
+
+根据参考文档和一些示例，我们可以组合出我们的App Spec的初步草稿。
+
+让我们将这个清单文件，spec.yaml，放在项目目录的根目录下。
+
+```yaml
+#! spec.yaml
+name: zero2prod
+# Check https://www.digitalocean.com/docs/app-platform/#regional-availability
+# for a list of all the available options.
+# You can get region slugs from
+# https://www.digitalocean.com/docs/platform/availability-matrix/
+# They must specified lowercased.
+# `fra` stands for Frankfurt (Germany - EU)
+region: fra
+services:
+  - name: zero2prod
+    # Relative to the repository root
+    dockerfile_path: Dockerfile
+    source_dir: .
+    github:
+      # Depending on when you created the repository,
+      # the default branch on GitHub might have been named `master`
+      branch: main
+      # Deploy a new version on every commit to `main`!
+      # Continuous Deployment, here we come!
+      deploy_on_push: true
+      # !!! Fill in with your details
+      # e.g. LukeMathWalker/zero-to-production
+      repo: DaviRain-Su/zero2prod
+    # Active probe used by DigitalOcean's to ensure our application is healthy
+    health_check:
+      # The path to our health check endpoint!
+      # It turned out to be useful in the end!
+      http_path: /health_check
+    # The port the application will be listening on for incoming requests
+    # It should match what we specified in our configuration/production.yaml file!
+    http_port: 8000
+    # For production workloads we'd go for at least two!
+    # But let's try to keep the bill under control for now...
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    # All incoming requests should be routed to our app
+    routes:
+      - path: /
+```
+
+请花一些时间熟悉所有指定的值，并了解它们的用途。
+我们可以使用他们的 CLI，doctl，来第一次创建应用程序：
+
+```bash
+doctl apps create --spec spec.yaml
+```
+
+```bash
+Error: Unable to initialize DigitalOcean API client: access token is required.
+(hint: run 'doctl auth init')
+
+错误：无法初始化 DigitalOcean API 客户端：需要访问令牌。
+（提示：运行“doctl auth init”）
+```
+
+好吧，我们必须先进行身份验证。
+让我们按照他们的建议来做。
+
+```bash
+doctl auth init
+```
+
+```bash
+Please authenticate doctl for use with your DigitalOcean account.
+You can generate a token in the control panel at
+https://cloud.digitalocean.com/account/api/tokens
+```
+
+一旦你提供你的令牌，我们可以再试一次：
+
+```bash
+doctl apps create --spec spec.yaml
+```
+
+```bash
+Error: POST
+https://api.digitalocean.com/v2/apps: 400 GitHub user not
+authenticated
+```
+
+好的，按照他们的说明来链接你的 GitHub 帐户。
+第三次是魅力，让我们再试一次！
+
+```bash
+doctl apps create --spec spec.yaml
+```
+
+```bash
+Notice: App created
+ID Spec Name Default Ingress Active Deployment ID In Progress Deployment ID
+e80... zero2prod
+```
+
+它成功了！
+你可以用以下命令来检查你的应用程序状态：
+
+```bash
+doctl apps list
+```
+
+或者通过查看 [DigitalOcean 的仪表板]()。
+
+虽然应用程序已经成功创建，但它还没有运行！
+
+检查他们的仪表板上的部署选项卡 - 它可能正在构建 Docker 镜像。
+
+根据他们错误跟踪器上的[最近几个问题]()，它可能需要一段时间 -
+有几人报告说他们遇到了缓慢的构建。Digital Ocean 的支持工程师建议利用 Docker 层缓存来缓解该问题 - 我们已经在那里覆盖了所有基础！
+
+>如果您在 DigitalOcean 上构建 Docker 镜像时遇到内存不足错误，请查看此 [GitHub 问题]()。
+
+
+等待这些行显示在他们的仪表板构建日志中：
+
+```bash
+zero2prod | 00:00:20 => Uploaded the built image to the container registry
+zero2prod | 00:00:20 => Build complete
+```
+
+部署成功！
+您应该能够每隔 10 秒或更短的时间看到健康检查日志，当 DigitalOcean 的平台向我们的应用程序发送 ping 来确保它正在运行。
+
+```bash
+doctl apps list
+```
+
+您可以检索您应用程序的面向公众的 URI。类似以下内容：
+
+```bash
+https://zero2prod-aaaaa.ondigitalocean.app
+```
+
+尝试现在发送一个健康检查请求，它应该返回一个 200 OK！
+
+注意，DigitalOcean 已经为我们设置了 HTTPS，通过提供证书并将 HTTPS 流量重定向到我们在应用程序规范中指定的端口。 少操心一件事。
+POST /subscriptions 端点仍然失败，与本地完全相同的方式：我们没有在生产环境中为我们的应用程序提供实时数据库。
+让我们提供一个。
+
+将此部分添加到您的 spec.yaml 文件中：
+
+```yaml
+databases:
+  # PG = Postgres
+  - engine: PG
+    # Database name
+    name: newsletter
+    # Again, let's keep the bill lean
+    num_nodes: 1
+    size: db-s-dev-database
+    # Postgres version - using the latest here
+    version: "12"
+```
+
+然后更新您的应用程序规范：
+
+```bash
+# You can retrieve your app id using `doctl apps list`
+doctl apps update YOUR-APP-ID --spec=spec.yaml
+```
+
+DigitalOcean 需要一些时间来创建 PostgreSQL 实例。
+在此期间，我们需要弄清楚如何将我们的应用程序指向生产环境中的数据库。
+
+### 5.4.3 如何使用环境变量注入密码
+
+连接字符串将包含我们不想提交到版本控制的值，例如我们数据库的 root 用户的用户名和密码。
+我们最好的选择是使用环境变量作为在运行时将密码注入到应用程序环境中的方法。例如，DigitalOcean 的应用程序可以引用 DATABASE_URL 环境变量（或其他几个变量以获得更细粒度的视图）来在运行时获取数据库连接字符串。
+我们需要升级我们的 get_configuration 函数（再次）来满足我们新的 要求。
+
+```rust
+
+```
+
+这允许我们使用环境变量自定义 Settings 结构中的任何值，覆盖配置文件中指定的值。
+为什么这很方便？
+
+它使我们可以注入太动态（即事先不知道）或太敏感而无法存储在版本控制中。
+
+它还使我们能够快速更改我们的应用程序的行为：如果我们想调整其中一个值（例如数据库端口），我们不必进行完整的重建。对于像 Rust 这样的语言，如果一个新的构建需要十分钟或更长时间，这可能意味着在短暂的停机和对客户可见的影响之间有很大差异。
+
+在继续之前，让我们来处理一个令人烦恼的细节：环境变量对于 config 包来说是字符串，如果使用 serde 的标准反序列化例程，它将无法接收整数。
+
+幸运的是，我们可以指定一个自定义的反序列化函数。
+
+让我们添加一个新的依赖项，serde-aux（serde 辅助）
