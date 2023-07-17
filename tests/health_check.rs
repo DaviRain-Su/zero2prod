@@ -1,6 +1,5 @@
 //! tests/health_check.rs
 use once_cell::sync::Lazy;
-use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use sqlx::{Connection, Executor, PgConnection};
 use std::net::TcpListener;
@@ -45,11 +44,6 @@ async fn spawn_app() -> TestApp {
     let mut configuration = get_configuration().unwrap();
     configuration.database.database_name = Uuid::new_v4().to_string();
 
-    std::env::set_var(
-        "DATABASE_URL",
-        configuration.database.connection_string().expose_secret(),
-    );
-
     let connection_pool = configure_database(&configuration.database).await;
 
     tracing::info!("port: {:?}", port);
@@ -64,6 +58,7 @@ async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+    println!("config: {:?}", config);
     // Create database
     let mut connection = PgConnection::connect_with(&config.with_db())
         .await

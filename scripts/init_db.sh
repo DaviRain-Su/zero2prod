@@ -42,14 +42,14 @@ then
 fi
 
 # 获取容器的 IP 地址
-# CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_ID")
+CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_ID")
 
 # Keep pinging Postgres until it's ready to accept commands
 export PGPASSWORD="${DB_PASSWORD}"
 
 
 # 使用容器的 IP 地址来检查 Postgres 是否可用
-until psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q'; do
+until psql -h "${CONTAINER_IP}" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q'; do
     >&2 echo "Postgres is still unavailable - sleeping"
     sleep 1
 done
@@ -58,7 +58,9 @@ done
 >&2 echo "Postgres is up and running on port ${DB_PORT} - running migrations now!"
 
 # 使用容器的 IP 地址来连接到 Postgres
-export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
+# export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
+
+export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${CONTAINER_IP}:${DB_PORT}/${DB_NAME}
 
 sqlx database create
 sqlx migrate run

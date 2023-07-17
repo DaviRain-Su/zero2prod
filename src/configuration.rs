@@ -13,7 +13,7 @@ pub struct Settings {
     pub application: ApplicationSettings,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: Secret<String>,
@@ -42,6 +42,7 @@ pub fn get_configuration() -> Result<Settings> {
         .unwrap_or_else(|_| "local".into())
         .try_into()
         .map_err(|_| anyhow::anyhow!("Failed to parse APP_ENVIRONMENT."))?;
+    println!("environment: {:?}", environment);
     let environment_filename = format!("{}.yaml", environment.as_str());
     let settings = config::Config::builder()
         .add_source(config::File::from(
@@ -71,9 +72,11 @@ pub fn get_configuration() -> Result<Settings> {
 impl DatabaseSettings {
     // Renamed from `connection_string`
     pub fn with_db(&self) -> PgConnectOptions {
-        let mut options = self.without_db().database(&self.database_name);
-        let option = options.log_statements(tracing::log::LevelFilter::Trace);
-        options
+        let options = self.without_db().database(&self.database_name);
+        let result = options
+            .clone()
+            .log_statements(tracing::log::LevelFilter::Trace);
+        result
     }
 
     // Renamed from `connection_string_without_db`
@@ -94,6 +97,7 @@ impl DatabaseSettings {
     }
 }
 
+#[derive(Debug)]
 // The possible runtime environment for our application.
 pub enum Environment {
     Local,
