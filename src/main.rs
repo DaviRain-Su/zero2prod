@@ -1,5 +1,6 @@
 use anyhow::Result;
 use secrecy::ExposeSecret;
+use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -26,8 +27,10 @@ async fn main() -> Result<()> {
         configuration.database.connection_string().expose_secret(),
     );
 
-    let connection_pool =
-        PgPool::connect_lazy(configuration.database.connection_string().expose_secret())?;
+    let connection_pool = PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_lazy(&configuration.database.connection_string().expose_secret())
+        .map_err(|_| anyhow::anyhow!("Failed to create Postgres connection pool."))?;
 
     let address = format!(
         "{}:{}",
