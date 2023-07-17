@@ -73,10 +73,7 @@ impl DatabaseSettings {
     // Renamed from `connection_string`
     pub fn with_db(&self) -> PgConnectOptions {
         let options = self.without_db().database(&self.database_name);
-        let result = options
-            .clone()
-            .log_statements(tracing::log::LevelFilter::Trace);
-        result
+        options.log_statements(tracing::log::LevelFilter::Trace)
     }
 
     // Renamed from `connection_string_without_db`
@@ -91,7 +88,7 @@ impl DatabaseSettings {
         PgConnectOptions::new()
             .host(&self.host)
             .username(&self.username)
-            .password(&self.password.expose_secret())
+            .password(self.password.expose_secret())
             .port(self.port)
             .ssl_mode(ssl_mode)
     }
