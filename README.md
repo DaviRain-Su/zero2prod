@@ -1,13 +1,13 @@
 # zero2prod
 
-- [x] Getting Started
-- [x] Building An Email Newsletter Microservice
-- [x] Sign up A New Subscriber
-- [ ] Telemetry
-- [ ] go live
-- [ ] Reject invalid subscribers #1
-- [ ] Reject invalid subscribers #2
-- [ ] Error handling
-- [ ] Native Newsletters Delivery
-- [ ] Securing Our API
-- [ ] Fault-tolerant Workflows
+- [x] ch1: Getting Started
+- [x] ch2: Building An Email Newsletter Microservice
+- [x] ch3: Sign up A New Subscriber
+- [x] ch4: Telemetry
+- [x] ch5: go live
+- [x] ch6: Reject invalid subscribers #1
+- [ ] ch7: Reject invalid subscribers #2
+- [ ] ch8: Error handling
+- [ ] ch9: Native Newsletters Delivery
+- [ ] ch10: Securing Our API
+- [ ] ch11: Fault-tolerant Workflows
