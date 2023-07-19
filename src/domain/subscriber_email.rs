@@ -2,7 +2,7 @@ use crate::errors::Error;
 use anyhow::Result;
 use validator::validate_email;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SubscriberEmail(String);
 
 impl SubscriberEmail {

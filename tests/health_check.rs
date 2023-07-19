@@ -6,6 +6,7 @@ use sqlx::{Connection, Executor, PgConnection};
 use std::net::TcpListener;
 use uuid::Uuid;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::email_client::EmailClient;
 use zero2prod::startup::run;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
@@ -46,9 +47,12 @@ async fn spawn_app() -> TestApp {
     configuration.database.database_name = Uuid::new_v4().to_string();
 
     let connection_pool = configure_database(&configuration.database).await;
+    // Build an `EmailClient` using `configuration`
+    let sender_email = configuration.email_client.sender().unwrap();
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
 
     tracing::info!("port: {:?}", port);
-    let server = run(listener, connection_pool.clone());
+    let server = run(listener, connection_pool.clone(), email_client);
 
     tokio::spawn(server);
 
