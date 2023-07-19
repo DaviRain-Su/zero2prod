@@ -10,8 +10,9 @@ use chrono::Utc;
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
 use sqlx::{Acquire, PgConnection};
-
 use uuid::Uuid;
+
+use crate::domain::{NewSubscriber, SubscriberName};
 
 #[derive(Deserialize, Debug)]
 pub struct FormData {
@@ -73,28 +74,31 @@ pub async fn subscribe(
         .await
         .expect("Failed to acquire connection");
     match form {
-        Some(form) => match insert_subscriber(connection_pool, &form).await {
-            Ok(_) => {
-                // if !is_valid_name(&form.0.name) {
-                //     let error_text = "invalid form name";
-                //     let mut resonse = Response::new(Body::from(error_text));
-                //     *resonse.status_mut() = StatusCode::BAD_REQUEST;
-                //     return resonse;
-                // }
-                let response_text = format!(
-                    "Received subscription from {} at {}",
-                    form.0.name, form.0.email
-                );
-                Response::new(Body::from(response_text))
+        Some(form) => {
+            let new_subscriber = NewSubscriber {
+                email: form.0.email,
+                name: SubscriberName::parse(&form.0.name).expect("invalid name"),
+            };
+            match insert_subscriber(connection_pool, &new_subscriber).await {
+                Ok(_) => {
+                    // if !is_valid_name(&form.0.name) {
+                    //     let error_text = "invalid form name";
+                    //     let mut resonse = Response::new(Body::from(error_text));
+                    //     *resonse.status_mut() = StatusCode::BAD_REQUEST;
+                    //     return resonse;
+                    // }
+                    let response_text = format!("Received subscription",);
+                    Response::new(Body::from(response_text))
+                }
+                Err(e) => {
+                    tracing::error!("Failed to execute query: {:?}", e);
+                    let error_text = format!("Database error: {}", e);
+                    let mut response = Response::new(Body::from(error_text));
+                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                    response
+                }
             }
-            Err(e) => {
-                tracing::error!("Failed to execute query: {:?}", e);
-                let error_text = format!("Database error: {}", e);
-                let mut response = Response::new(Body::from(error_text));
-                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                response
-            }
-        },
+        }
         None => {
             let error_text = "Missing fields";
             let mut response = Response::new(Body::from(error_text));
@@ -108,11 +112,11 @@ pub async fn subscribe(
 
 #[tracing::instrument(
     name = "Saving new subscriber details in the database",
-    skip(form, pool)
+    skip(new_subscriber, pool)
 )]
 pub async fn insert_subscriber(
     pool: &mut PgConnection,
-    form: &FormData,
+    new_subscriber: &NewSubscriber,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -120,8 +124,8 @@ INSERT INTO subscriptions (id, email, name, subscribed_at)
 VALUES ($1, $2, $3, $4)
 "#,
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        new_subscriber.email,
+        new_subscriber.name.as_ref(),
         Utc::now()
     )
     .execute(pool)
