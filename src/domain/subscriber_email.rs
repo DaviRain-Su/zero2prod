@@ -62,12 +62,6 @@ mod tests {
         assert_eq!(SubscriberEmail::parse(&email).is_err(), true);
     }
 
-    // #[test]
-    // fn valid_emails_are_parsed_successfully() {
-    //     let email: String = SafeEmail().fake();
-    //     assert_eq!(SubscriberEmail::parse(&email).is_ok(), true);
-    // }
-
     #[quickcheck_macros::quickcheck]
     fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
         dbg!(valid_email.0.clone());
