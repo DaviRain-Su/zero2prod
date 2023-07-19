@@ -7,6 +7,7 @@ pub struct NewSubscriber {
     pub name: SubscriberName,
 }
 
+#[derive(Debug)]
 pub struct SubscriberName(String);
 
 impl SubscriberName {
@@ -59,5 +60,44 @@ impl SubscriberName {
 impl AsRef<str> for SubscriberName {
     fn as_ref(&self) -> &str {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    #[test]
+    fn a_256_grapheme_long_name_is_valid() {
+        let name = "ё".repeat(256);
+        assert_eq!(SubscriberName::parse(&name).is_ok(), true);
+    }
+    #[test]
+    fn a_name_longer_than_256_graphemes_is_rejected() {
+        let name = "a".repeat(257);
+        assert_eq!(SubscriberName::parse(&name).is_err(), true);
+    }
+    #[test]
+    fn whitespace_only_names_are_rejected() {
+        let name = " ".to_string();
+        assert_eq!(SubscriberName::parse(&name).is_err(), true);
+    }
+    #[test]
+    fn empty_string_is_rejected() {
+        let name = "".to_string();
+        assert_eq!(SubscriberName::parse(&name).is_err(), true);
+    }
+
+    #[test]
+    fn names_containing_an_invalid_character_are_rejected() {
+        for name in &['/', '(', ')', '"', '<', '>', '\\', '{', '}'] {
+            let name = name.to_string();
+            assert_eq!(SubscriberName::parse(&name).is_err(), true);
+        }
+    }
+    #[test]
+    fn a_valid_name_is_parsed_successfully() {
+        let name = "Ursula Le Guin".to_string();
+        assert_eq!(SubscriberName::parse(&name).is_ok(), true);
     }
 }

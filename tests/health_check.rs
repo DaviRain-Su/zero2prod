@@ -1,5 +1,6 @@
 //! tests/health_check.rs
 use once_cell::sync::Lazy;
+use pretty_assertions::assert_eq;
 use sqlx::PgPool;
 use sqlx::{Connection, Executor, PgConnection};
 use std::net::TcpListener;
@@ -149,9 +150,9 @@ async fn subscribe_returns_a_200_when_fields_are_present_but_empty() {
             .expect("Failed to execute request.");
         // Assert
         assert_eq!(
-            200,
+            400, // not 200
             response.status().as_u16(),
-            "The API did not return a 200 OK when the payload was {}.",
+            "The API did not return a 400 BAD Request when the payload was {}.",
             description
         );
     }
@@ -185,4 +186,10 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
             error_message
         );
     }
+}
+
+#[test]
+fn dummy_fail() {
+    let result: Result<&str, &str> = Err("some error");
+    pretty_assertions::assert_eq!(result, Err("some error"));
 }

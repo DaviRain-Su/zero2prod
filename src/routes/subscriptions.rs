@@ -75,9 +75,18 @@ pub async fn subscribe(
         .expect("Failed to acquire connection");
     match form {
         Some(form) => {
+            let name = match SubscriberName::parse(&form.0.name) {
+                Ok(name) => name,
+                Err(_) => {
+                    let error_text = "invalid name";
+                    let mut resonse = Response::new(Body::from(error_text));
+                    *resonse.status_mut() = StatusCode::BAD_REQUEST;
+                    return resonse;
+                }
+            };
             let new_subscriber = NewSubscriber {
                 email: form.0.email,
-                name: SubscriberName::parse(&form.0.name).expect("invalid name"),
+                name,
             };
             match insert_subscriber(connection_pool, &new_subscriber).await {
                 Ok(_) => {
@@ -87,7 +96,7 @@ pub async fn subscribe(
                     //     *resonse.status_mut() = StatusCode::BAD_REQUEST;
                     //     return resonse;
                     // }
-                    let response_text = format!("Received subscription",);
+                    let response_text = "Received subscription".to_string();
                     Response::new(Body::from(response_text))
                 }
                 Err(e) => {
