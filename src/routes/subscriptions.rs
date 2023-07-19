@@ -12,7 +12,7 @@ use sqlx::postgres::PgPool;
 use sqlx::{Acquire, PgConnection};
 use uuid::Uuid;
 
-use crate::domain::{NewSubscriber, SubscriberName};
+use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 
 #[derive(Deserialize, Debug)]
 pub struct FormData {
@@ -75,6 +75,16 @@ pub async fn subscribe(
         .expect("Failed to acquire connection");
     match form {
         Some(form) => {
+            let email = match SubscriberEmail::parse(&form.0.email) {
+                Ok(email) => email,
+                Err(_) => {
+                    let error_text = "invalid email";
+                    let mut resonse = Response::new(Body::from(error_text));
+                    *resonse.status_mut() = StatusCode::BAD_REQUEST;
+                    return resonse;
+                }
+            };
+
             let name = match SubscriberName::parse(&form.0.name) {
                 Ok(name) => name,
                 Err(_) => {
@@ -84,10 +94,7 @@ pub async fn subscribe(
                     return resonse;
                 }
             };
-            let new_subscriber = NewSubscriber {
-                email: form.0.email,
-                name,
-            };
+            let new_subscriber = NewSubscriber::new(email, name);
             match insert_subscriber(connection_pool, &new_subscriber).await {
                 Ok(_) => {
                     // if !is_valid_name(&form.0.name) {
@@ -133,7 +140,7 @@ INSERT INTO subscriptions (id, email, name, subscribed_at)
 VALUES ($1, $2, $3, $4)
 "#,
         Uuid::new_v4(),
-        new_subscriber.email,
+        new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         Utc::now()
     )
