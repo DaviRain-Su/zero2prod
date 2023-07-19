@@ -20,6 +20,16 @@ pub struct FormData {
     email: String,
 }
 
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = anyhow::Error;
+
+    fn try_from(value: FormData) -> Result<Self, Self::Error> {
+        let name = SubscriberName::parse(&value.name)?;
+        let email = SubscriberEmail::parse(&value.email)?;
+        Ok(Self::new(email, name))
+    }
+}
+
 // we can extract the connection pool with `State`
 pub async fn using_connection_pool_extractor(
     State(pool): State<PgPool>,
@@ -75,26 +85,16 @@ pub async fn subscribe(
         .expect("Failed to acquire connection");
     match form {
         Some(form) => {
-            let email = match SubscriberEmail::parse(&form.0.email) {
-                Ok(email) => email,
+            let new_subscriber = match NewSubscriber::try_from(form.0) {
+                Ok(from) => from,
                 Err(_) => {
-                    let error_text = "invalid email";
+                    let error_text = "invalid form data";
                     let mut resonse = Response::new(Body::from(error_text));
                     *resonse.status_mut() = StatusCode::BAD_REQUEST;
                     return resonse;
                 }
             };
 
-            let name = match SubscriberName::parse(&form.0.name) {
-                Ok(name) => name,
-                Err(_) => {
-                    let error_text = "invalid name";
-                    let mut resonse = Response::new(Body::from(error_text));
-                    *resonse.status_mut() = StatusCode::BAD_REQUEST;
-                    return resonse;
-                }
-            };
-            let new_subscriber = NewSubscriber::new(email, name);
             match insert_subscriber(connection_pool, &new_subscriber).await {
                 Ok(_) => {
                     // if !is_valid_name(&form.0.name) {
