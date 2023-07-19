@@ -2907,6 +2907,7 @@ dependencies = [
  "serde",
  "serde-aux",
  "sqlx",
+ "thiserror",
  "tokio",
  "tower",
  "tower-http",
@@ -2914,6 +2915,7 @@ dependencies = [
  "tracing-bunyan-formatter",
  "tracing-log",
  "tracing-subscriber",
+ "unicode-segmentation",
  "uuid",
 ]
 

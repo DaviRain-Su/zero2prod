@@ -10,6 +10,7 @@ use chrono::Utc;
 use serde::Deserialize;
 use sqlx::postgres::PgPool;
 use sqlx::{Acquire, PgConnection};
+
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
@@ -74,6 +75,12 @@ pub async fn subscribe(
     match form {
         Some(form) => match insert_subscriber(connection_pool, &form).await {
             Ok(_) => {
+                // if !is_valid_name(&form.0.name) {
+                //     let error_text = "invalid form name";
+                //     let mut resonse = Response::new(Body::from(error_text));
+                //     *resonse.status_mut() = StatusCode::BAD_REQUEST;
+                //     return resonse;
+                // }
                 let response_text = format!(
                     "Received subscription from {} at {}",
                     form.0.name, form.0.email
