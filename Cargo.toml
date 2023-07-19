@@ -44,6 +44,7 @@ serde-aux = "4.2"
 unicode-segmentation = "1.10"
 thiserror = "1.0"
 static_assertions = "1.1.0"
+validator = "0.16.1"
 
 [dependencies.sqlx]
 version = "0.7"

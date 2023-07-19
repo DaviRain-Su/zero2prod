@@ -1,3 +1,4 @@
+use crate::errors::Error;
 use anyhow::Result;
 use unicode_segmentation::UnicodeSegmentation;
 
