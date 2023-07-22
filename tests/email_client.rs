@@ -54,7 +54,13 @@ mod tests {
 
     /// create a new email client with a random sender
     fn email_client(base_url: String) -> EmailClient {
-        EmailClient::new(base_url, email(), Secret::new(Faker.fake())).unwrap()
+        EmailClient::new(
+            base_url,
+            email(),
+            Secret::new(Faker.fake()),
+            std::time::Duration::from_millis(200),
+        )
+        .unwrap()
     }
 
     #[tokio::test]

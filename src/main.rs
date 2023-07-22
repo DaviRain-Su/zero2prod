@@ -27,10 +27,13 @@ async fn main() -> Result<()> {
         .email_client
         .sender()
         .map_err(|_| anyhow::anyhow!("Invalid sender email address."))?;
+    let timeout = configuration.email_client.timeout();
     let email_client = EmailClient::new(
         configuration.email_client.base_url,
         sender_email,
         configuration.email_client.authorization_token,
+        // pass new argument from configuration
+        timeout,
     )?;
 
     let address = format!(
