@@ -30,30 +30,14 @@ impl TryFrom<FormData> for NewSubscriber {
     }
 }
 
-#[derive(Debug)]
-pub enum SubscriberError {
+#[derive(thiserror::Error, Debug)]
+pub enum SubscribeError {
+    #[error("{0}")]
     ValidationError(String),
-    DatabaseError(sqlx::Error),
-    StoreTokenError,
-    SendEmailError(reqwest::Error),
-}
-
-impl From<reqwest::Error> for SubscriberError {
-    fn from(error: reqwest::Error) -> Self {
-        Self::SendEmailError(error)
-    }
-}
-
-impl From<String> for SubscriberError {
-    fn from(value: String) -> Self {
-        Self::ValidationError(value)
-    }
-}
-
-impl From<sqlx::Error> for SubscriberError {
-    fn from(error: sqlx::Error) -> Self {
-        Self::DatabaseError(error)
-    }
+    // Transparent delegates both `Display`'s and `source`'s implementation
+    // to the type wrapped by `UnexpectedError`.
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
 }
 
 // we can extract the connection pool with `State`
