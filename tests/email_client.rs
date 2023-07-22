@@ -49,7 +49,7 @@ mod tests {
             .and(method("POST"))
             // use ur custom matcher
             .and(SendEmailBodyMatcher)
-            .respond_with(ResponseTemplate::new(200))
+            .respond_with(ResponseTemplate::new(500))
             .expect(1)
             .mount(&mock_server)
             .await;
@@ -58,9 +58,11 @@ mod tests {
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
         // Act
-        let _ = email_client
+        let ret = email_client
             .send_email(subscriber_email, &subject, &content, &content)
             .await;
+
+        assert!(ret.is_err())
         // Assert
     }
 }
