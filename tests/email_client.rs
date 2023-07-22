@@ -43,13 +43,14 @@ mod tests {
         let email: String = SafeEmail().fake();
         let sender = SubscriberEmail::parse(&email).unwrap();
         let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()));
+        let response = ResponseTemplate::new(500).set_delay(std::time::Duration::from_secs(180));
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
             .and(path("/email"))
             .and(method("POST"))
             // use ur custom matcher
             .and(SendEmailBodyMatcher)
-            .respond_with(ResponseTemplate::new(500))
+            .respond_with(response)
             .expect(1)
             .mount(&mock_server)
             .await;
