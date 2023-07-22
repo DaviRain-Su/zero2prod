@@ -48,7 +48,10 @@ async fn spawn_app() -> TestApp {
 
     let connection_pool = configure_database(&configuration.database).await;
     // Build an `EmailClient` using `configuration`
-    let sender_email = configuration.email_client.sender().unwrap();
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Invalid sender email address.");
     let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
 
     tracing::info!("port: {:?}", port);

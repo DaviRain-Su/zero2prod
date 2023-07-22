@@ -4,7 +4,7 @@ use std::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use zero2prod::configuration::get_configuration;
 use zero2prod::email_client::EmailClient;
-use zero2prod::startup::run;
+use zero2prod::startup;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -36,5 +36,5 @@ async fn main() -> Result<()> {
 
     let listener = TcpListener::bind(address)?;
 
-    run(listener, connection_pool, email_client).await
+    startup::run(listener, connection_pool, email_client).await
 }
