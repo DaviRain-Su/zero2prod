@@ -13,14 +13,14 @@ use crate::routes::health_check;
 use crate::routes::index;
 use crate::routes::{subscribe, using_connection_pool_extractor};
 
-pub fn get_connection_poll(database_configuration: &DatabaseSettings) -> PgPool {
+pub fn get_connection_pool(database_configuration: &DatabaseSettings) -> PgPool {
     PgPoolOptions::new()
         .acquire_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(database_configuration.with_db())
 }
 
 pub async fn build(configuration: &Settings) -> Result<()> {
-    let connection_pool = get_connection_poll(&configuration.database);
+    let connection_pool = get_connection_pool(&configuration.database);
     // Build an `EmailClient` using `configuration`
     let sender_email = configuration
         .email_client
