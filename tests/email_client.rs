@@ -10,7 +10,6 @@ mod tests {
     use zero2prod::email_client::EmailClient;
 
     #[tokio::test]
-    #[ignore]
     async fn send_email_fires_a_request_to_base_url() {
         // Arrange
         let mock_server = MockServer::start().await;
