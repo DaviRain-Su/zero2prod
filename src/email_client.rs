@@ -1,20 +1,29 @@
 use crate::domain::SubscriberEmail;
 use anyhow::Result;
 use reqwest::Client;
+use secrecy::ExposeSecret;
+use secrecy::Secret;
 
 #[derive(Debug, Clone)]
 pub struct EmailClient {
     pub http_client: Client,
     pub base_url: String,
     pub sender: SubscriberEmail,
+    // We don't want to log this by accident
+    authorization_token: Secret<String>,
 }
 
 impl EmailClient {
-    pub fn new(base_url: String, sender: SubscriberEmail) -> Self {
+    pub fn new(
+        base_url: String,
+        sender: SubscriberEmail,
+        authorization_token: Secret<String>,
+    ) -> Self {
         Self {
             http_client: Client::new(),
             base_url,
             sender,
+            authorization_token,
         }
     }
 
@@ -36,7 +45,16 @@ impl EmailClient {
             html_body: html_content.to_owned(),
             text_body: text_content.to_owned(),
         };
-        let _builder = self.http_client.post(url).json(&request_body);
+        self.http_client
+            .post(url)
+            .header(
+                "X-Postmark-Server-Token",
+                self.authorization_token.expose_secret(),
+            )
+            .json(&request_body)
+            .send()
+            .await?;
+
         Ok(())
     }
 }
