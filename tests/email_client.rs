@@ -42,7 +42,8 @@ mod tests {
         let mock_server = MockServer::start().await;
         let email: String = SafeEmail().fake();
         let sender = SubscriberEmail::parse(&email).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()));
+        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()))
+            .expect("create client email failed");
         let response = ResponseTemplate::new(500).set_delay(std::time::Duration::from_secs(180));
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
