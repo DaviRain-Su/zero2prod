@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use zero2prod::configuration::get_configuration;
-use zero2prod::startup;
+use zero2prod::startup::Application;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,5 +15,7 @@ async fn main() -> Result<()> {
 
     let configuration = get_configuration()?;
 
-    startup::build(&configuration).await
+    let _ = Application::build(configuration).await?;
+
+    Ok(())
 }
