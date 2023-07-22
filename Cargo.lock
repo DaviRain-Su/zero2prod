@@ -3917,6 +3917,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde-aux",
+ "serde_json",
  "sqlx",
  "static_assertions",
  "surf",

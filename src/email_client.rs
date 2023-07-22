@@ -60,6 +60,7 @@ impl EmailClient {
 }
 
 #[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
 struct SendEmailRequest {
     from: String,
     to: String,
