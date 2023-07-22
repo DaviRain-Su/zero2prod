@@ -30,6 +30,32 @@ impl TryFrom<FormData> for NewSubscriber {
     }
 }
 
+#[derive(Debug)]
+pub enum SubscriberError {
+    ValidationError(String),
+    DatabaseError(sqlx::Error),
+    StoreTokenError,
+    SendEmailError(reqwest::Error),
+}
+
+impl From<reqwest::Error> for SubscriberError {
+    fn from(error: reqwest::Error) -> Self {
+        Self::SendEmailError(error)
+    }
+}
+
+impl From<String> for SubscriberError {
+    fn from(value: String) -> Self {
+        Self::ValidationError(value)
+    }
+}
+
+impl From<sqlx::Error> for SubscriberError {
+    fn from(error: sqlx::Error) -> Self {
+        Self::DatabaseError(error)
+    }
+}
+
 // we can extract the connection pool with `State`
 pub async fn using_connection_pool_extractor(
     State(pool): State<PgPool>,
