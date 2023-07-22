@@ -36,14 +36,33 @@ mod tests {
         }
     }
 
+    /// generate a random email subject
+    fn subject() -> String {
+        Sentence(1..2).fake()
+    }
+
+    /// generate a random email content
+    fn content() -> String {
+        Paragraph(1..10).fake()
+    }
+
+    /// generate a random subscriber email
+    fn email() -> SubscriberEmail {
+        let email: String = SafeEmail().fake();
+        SubscriberEmail::parse(&email).unwrap()
+    }
+
+    /// create a new email client with a random sender
+    fn email_client(base_url: String) -> EmailClient {
+        EmailClient::new(base_url, email(), Secret::new(Faker.fake())).unwrap()
+    }
+
     #[tokio::test]
     async fn send_email_fires_a_request_to_base_url() {
         // Arrange
         let mock_server = MockServer::start().await;
-        let email: String = SafeEmail().fake();
-        let sender = SubscriberEmail::parse(&email).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()))
-            .expect("create client email failed");
+        let email_client = email_client(mock_server.uri());
+
         let response = ResponseTemplate::new(500).set_delay(std::time::Duration::from_secs(180));
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
@@ -55,13 +74,10 @@ mod tests {
             .expect(1)
             .mount(&mock_server)
             .await;
-        let email: String = SafeEmail().fake();
-        let subscriber_email = SubscriberEmail::parse(&email).unwrap();
-        let subject: String = Sentence(1..2).fake();
-        let content: String = Paragraph(1..10).fake();
+
         // Act
         let ret = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+            .send_email(email(), &subject(), &content(), &content())
             .await;
 
         assert!(ret.is_err())
