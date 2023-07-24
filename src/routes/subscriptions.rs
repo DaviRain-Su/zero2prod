@@ -111,7 +111,7 @@ where
 )]
 pub async fn subscribe(
     DatabaseConnection(mut conn_pool): DatabaseConnection,
-    WrapEmailClient(mut _email_client): WrapEmailClient,
+    WrapEmailClient(email_client): WrapEmailClient,
     form: Option<Form<FormData>>,
 ) -> impl IntoResponse {
     let connection_pool = conn_pool
@@ -132,12 +132,23 @@ pub async fn subscribe(
 
             match insert_subscriber(connection_pool, &new_subscriber).await {
                 Ok(_) => {
-                    // if !is_valid_name(&form.0.name) {
-                    //     let error_text = "invalid form name";
-                    //     let mut resonse = Response::new(Body::from(error_text));
-                    //     *resonse.status_mut() = StatusCode::BAD_REQUEST;
-                    //     return resonse;
-                    // }
+                    // Send a (useless) email to the new subscriber.
+                    // We are ignoring email delivery errors for now.
+                    if let Err(e) = email_client
+                        .send_email(
+                            new_subscriber.email,
+                            "Welcome!",
+                            "Welcome to our newsletter!",
+                            "Welcome to our newsletter!",
+                        )
+                        .await
+                    {
+                        let error_text = format!("invalid form data: {e:?}");
+                        let mut resonse = Response::new(Body::from(error_text));
+                        *resonse.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                        return resonse;
+                    }
+
                     let response_text = "Received subscription".to_string();
                     Response::new(Body::from(response_text))
                 }
