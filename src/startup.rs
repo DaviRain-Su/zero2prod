@@ -1,6 +1,6 @@
 use crate::configuration::{DatabaseSettings, Settings};
+use crate::routes::using_connection_pool_extractor;
 use anyhow::Result;
-use axum::extract::Form;
 use axum::routing::IntoMakeService;
 use axum::Server;
 use axum::{routing::get, Router};
@@ -14,7 +14,7 @@ use crate::email_client::EmailClient;
 use crate::routes::greet;
 use crate::routes::health_check;
 use crate::routes::index;
-use crate::routes::{subscribe, using_connection_pool_extractor};
+use crate::routes::subscribe;
 
 #[derive(Debug)]
 pub struct Application {
@@ -71,11 +71,10 @@ pub fn get_connection_pool(database_configuration: &DatabaseSettings) -> PgPool 
 pub async fn run(
     listener: TcpListener,
     conn_pool: PgPool,
-    email_client: EmailClient,
+    _email_client: EmailClient,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     tracing::debug!("listening on {}", listener.local_addr()?);
 
-    let email_client = Form(email_client);
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
@@ -90,8 +89,7 @@ pub async fn run(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         )
-        .with_state(conn_pool)
-        .with_state(email_client); // ref: https://github.com/tokio-rs/axum/blob/main/examples/sqlx-postgres/src/main.rs#L27
+        .with_state(conn_pool);
 
     // run it with hyper on localhost:3000
     Ok(axum::Server::from_tcp(listener)?.serve(app.into_make_service()))
