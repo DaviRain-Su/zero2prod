@@ -20,7 +20,6 @@ mod tests {
             let result: Result<serde_json::Value, _> = serde_json::from_slice(&_request.body);
 
             if let Ok(body) = result {
-                dbg!(&body);
                 // check if the body has the expected structure
                 // check that all the mandatory fields are populated
                 // without inspecting the field values.

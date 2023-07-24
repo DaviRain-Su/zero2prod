@@ -83,7 +83,6 @@ pub async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
-    println!("databse url: {}", config.connection_string_without_db());
     // Create database
     let mut connection = PgConnection::connect(&config.connection_string_without_db())
         .await
