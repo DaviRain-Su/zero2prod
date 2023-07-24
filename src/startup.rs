@@ -1,6 +1,7 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::using_connection_pool_extractor;
 use anyhow::Result;
+use axum::routing::post;
 use axum::routing::IntoMakeService;
 use axum::Server;
 use axum::{routing::get, Router};
@@ -68,28 +69,49 @@ pub fn get_connection_pool(database_configuration: &DatabaseSettings) -> PgPool 
         .connect_lazy_with(database_configuration.with_db())
 }
 
+// ref: axum: https://github.com/tokio-rs/axum/blob/main/examples/oauth/src/main.rs#L78
+#[derive(Clone)]
+struct AppState {
+    database: PgPool,
+    email_client: EmailClient,
+}
+
+impl axum::extract::FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.database.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for EmailClient {
+    fn from_ref(state: &AppState) -> Self {
+        state.email_client.clone()
+    }
+}
+
 pub async fn run(
     listener: TcpListener,
     conn_pool: PgPool,
-    _email_client: EmailClient,
+    email_client: EmailClient,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     tracing::debug!("listening on {}", listener.local_addr()?);
+
+    let state = AppState {
+        database: conn_pool,
+        email_client,
+    };
 
     // build our application with a single route
     let app = Router::new()
         .route("/", get(index))
         .route("/greet/:name", get(greet))
         .route("/health_check", get(health_check))
-        .route(
-            "/subscriptions",
-            get(using_connection_pool_extractor).post(subscribe),
-        )
+        .route("/subscriptions", post(subscribe))
         // logging so we can see whats going on
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         )
-        .with_state(conn_pool);
+        .with_state(state);
 
     // run it with hyper on localhost:3000
     Ok(axum::Server::from_tcp(listener)?.serve(app.into_make_service()))

@@ -13,6 +13,7 @@ use sqlx::{Acquire, PgConnection};
 use uuid::Uuid;
 
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
+use crate::email_client::EmailClient;
 
 #[derive(Deserialize, Debug)]
 pub struct FormData {
@@ -71,6 +72,29 @@ where
     }
 }
 
+pub struct WrapEmailClient(pub EmailClient);
+
+impl FromRef<EmailClient> for WrapEmailClient {
+    fn from_ref(state: &EmailClient) -> Self {
+        Self(state.clone())
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for WrapEmailClient
+where
+    EmailClient: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let email_client = EmailClient::from_ref(state);
+
+        Ok(Self(email_client))
+    }
+}
+
 /// Utility function for mapping any error into a `500 Internal Server Error`
 /// response.
 fn internal_error<E>(err: E) -> (StatusCode, String)
@@ -87,6 +111,7 @@ where
 )]
 pub async fn subscribe(
     DatabaseConnection(mut conn_pool): DatabaseConnection,
+    WrapEmailClient(mut _email_client): WrapEmailClient,
     form: Option<Form<FormData>>,
 ) -> impl IntoResponse {
     let connection_pool = conn_pool
