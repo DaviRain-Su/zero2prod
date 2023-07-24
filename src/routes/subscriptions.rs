@@ -132,14 +132,22 @@ pub async fn subscribe(
 
             match insert_subscriber(connection_pool, &new_subscriber).await {
                 Ok(_) => {
+                    let confirmation_link = "https://my-api.com/subscriptions/confirm";
                     // Send a (useless) email to the new subscriber.
                     // We are ignoring email delivery errors for now.
                     if let Err(e) = email_client
                         .send_email(
                             new_subscriber.email,
                             "Welcome!",
-                            "Welcome to our newsletter!",
-                            "Welcome to our newsletter!",
+                            &format!(
+                                "Welcome to our newsletter!<br />\
+                            Click <a href=\"{}\">here</a> to confirm your subscription.",
+                                confirmation_link
+                            ),
+                            &format!(
+                            "Welcome to our newsletter!\nVisit {} to confirm your subscription.",
+                            confirmation_link
+                            ),
                         )
                         .await
                     {

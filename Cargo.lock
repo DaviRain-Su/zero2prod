@@ -1646,6 +1646,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
+name = "linkify"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d9967eb7d0bc31c39c6f52e8fce42991c0cd1f7a2078326f0b7a399a584c8d"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3907,6 +3916,7 @@ dependencies = [
  "fake",
  "http",
  "hyper",
+ "linkify",
  "once_cell",
  "pretty_assertions",
  "proptest",
