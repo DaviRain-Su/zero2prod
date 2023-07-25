@@ -11,6 +11,7 @@ use std::net::TcpListener;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 
 use crate::email_client::EmailClient;
+use crate::routes::confirm;
 use crate::routes::greet;
 use crate::routes::health_check;
 use crate::routes::index;
@@ -46,7 +47,14 @@ impl Application {
 
         let listener = TcpListener::bind(address)?;
         let port = listener.local_addr()?.port();
-        let server = run(listener, connection_pool, email_client).await?;
+        let server = run(
+            listener,
+            connection_pool,
+            email_client,
+            // new argument from configuration
+            configuration.application.base_url,
+        )
+        .await?;
 
         Ok(Self { port, server })
     }
@@ -73,6 +81,7 @@ pub fn get_connection_pool(database_configuration: &DatabaseSettings) -> PgPool 
 struct AppState {
     database: PgPool,
     email_client: EmailClient,
+    base_url: ApplicationBaseUrl,
 }
 
 impl axum::extract::FromRef<AppState> for PgPool {
@@ -87,16 +96,31 @@ impl axum::extract::FromRef<AppState> for EmailClient {
     }
 }
 
+impl axum::extract::FromRef<AppState> for ApplicationBaseUrl {
+    fn from_ref(state: &AppState) -> Self {
+        state.base_url.clone()
+    }
+}
+
+// We need to define a wrapper type in order to retrieve the URL
+// in the `subscribe` handler.
+// Retrieval from the context, in actix-web, is type-based: using
+// a raw `String` would expose us to conflicts.
+#[derive(Clone, Debug)]
+pub struct ApplicationBaseUrl(pub String);
+
 pub async fn run(
     listener: TcpListener,
     conn_pool: PgPool,
     email_client: EmailClient,
+    base_url: String,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router>>> {
     tracing::debug!("listening on {}", listener.local_addr()?);
 
     let state = AppState {
         database: conn_pool,
         email_client,
+        base_url: ApplicationBaseUrl(base_url),
     };
 
     // build our application with a single route
@@ -105,6 +129,7 @@ pub async fn run(
         .route("/greet/:name", get(greet))
         .route("/health_check", get(health_check))
         .route("/subscriptions", post(subscribe))
+        .route("/subscriptions/confirm", get(confirm))
         // logging so we can see whats going on
         .layer(
             TraceLayer::new_for_http()
