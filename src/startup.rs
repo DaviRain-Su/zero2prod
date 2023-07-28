@@ -1,5 +1,4 @@
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::routes::using_connection_pool_extractor;
 use anyhow::Result;
 use axum::routing::post;
 use axum::routing::IntoMakeService;
