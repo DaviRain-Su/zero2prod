@@ -7,7 +7,7 @@
 - [x] ch5: go live
 - [x] ch6: Reject invalid subscribers #1
 - [ ] ch7: Reject invalid subscribers #2
-- [ ] ch8: Error handling
+- [x] ch8: Error handling
 - [ ] ch9: Native Newsletters Delivery
 - [ ] ch10: Securing Our API
 - [ ] ch11: Fault-tolerant Workflows
