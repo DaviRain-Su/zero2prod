@@ -59,7 +59,8 @@ impl EmailClientSettings {
 
 pub fn get_configuration() -> Result<Settings> {
     let base_path = std::env::current_dir()
-        .map_err(|_| anyhow::anyhow!("Failed to determine the current directory"))?;
+        .map_err(|e| anyhow::anyhow!("Failed to determine the current directory: {e}"))?;
+
     let configuration_directory = base_path.join("configuration");
     // Detect the running environment.
     // Default to `local` if unspecified.
@@ -87,11 +88,9 @@ pub fn get_configuration() -> Result<Settings> {
 
     // Try to convert the configuration values it read into
     // our Settings type
-    let settings = settings
+    settings
         .try_deserialize::<Settings>()
-        .map_err(|e| anyhow::anyhow!(e))?;
-
-    Ok(settings)
+        .map_err(|e| anyhow::anyhow!(e))
 }
 
 impl DatabaseSettings {
@@ -146,6 +145,7 @@ pub enum Environment {
     Local,
     Production,
 }
+
 impl Environment {
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -155,12 +155,12 @@ impl Environment {
     }
 }
 impl TryFrom<String> for Environment {
-    type Error = String;
+    type Error = anyhow::Error;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         match s.to_lowercase().as_str() {
             "local" => Ok(Self::Local),
             "production" => Ok(Self::Production),
-            other => Err(format!(
+            other => Err(anyhow::anyhow!(
                 "{} is not a supported environment. Use either `local` or `production`.",
                 other
             )),
